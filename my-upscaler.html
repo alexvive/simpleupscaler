@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Upscaler (Простой Апскейлер)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            width: 90%;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+        }
+        select, button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #preview-container {
+            margin-top: 20px;
+            display: none; /* Hidden by default (скрыто по умолчанию) */
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🖼️ Simple Upscaler (Простой Апскейлер)</h1>
+        <p>Upload an image to increase its resolution (Загрузи изображение, чтобы увеличить его разрешение).</p>
+        
+        <input type="file" id="imageInput" accept="image/*">
+        
+        <div class="controls">
+            <label for="scaleFactor">Scale (Масштаб):</label>
+            <select id="scaleFactor">
+                <option value="2">2x</option>
+                <option value="3">3x</option>
+                <option value="4">4x</option>
+            </select>
+            <button id="upscaleBtn" disabled>Upscale Image (Увеличить)</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="preview-container">
+            <h3>Result (Результат):</h3>
+            <img id="resultImage" alt="Upscaled Result">
+            <br><br>
+            <a id="downloadLink" href="#" download="upscaled_image.png">
+                <button style="background-color: #27ae60;">Download (Скачать)</button>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const upscaleBtn = document.getElementById('upscaleBtn');
+        const scaleFactorSelect = document.getElementById('scaleFactor');
+        const statusDiv = document.getElementById('status');
+        const previewContainer = document.getElementById('preview-container');
+        const resultImage = document.getElementById('resultImage');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let originalImage = new Image();
+
+        // Enable button when file is selected (Активируем кнопку, когда файл выбран)
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    originalImage.src = event.target.result;
+                    originalImage.onload = () => {
+                        upscaleBtn.disabled = false;
+                        statusDiv.textContent = `Original size: ${originalImage.width}x${originalImage.height}px`;
+                        previewContainer.style.display = 'none';
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        upscaleBtn.addEventListener('click', function() {
+            if (!originalImage.src) return;
+
+            statusDiv.textContent = "Processing... (Обработка...)";
+            
+            // Use setTimeout to allow UI to update before heavy processing (Используем setTimeout, чтобы интерфейс обновился перед обработкой)
+            setTimeout(() => {
+                const scale = parseInt(scaleFactorSelect.value);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate new dimensions (Вычисляем новые размеры)
+                const newWidth = originalImage.width * scale;
+                const newHeight = originalImage.height * scale;
+
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+
+                // Improve quality slightly (Немного улучшаем качество)
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
+                // Draw scaled image (Рисуем увеличенное изображение)
+                ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+
+                // Export as PNG (Экспортируем как PNG)
+                const dataURL = canvas.toDataURL('image/png');
+                
+                resultImage.src = dataURL;
+                downloadLink.href = dataURL;
+                
+                previewContainer.style.display = 'block';
+                statusDiv.textContent = `Done! New size: ${newWidth}x${newHeight}px (Готово! Новый размер: ${newWidth}x${newHeight}px)`;
+            }, 100);
+        });
+    </script>
+</body>
+</html>
